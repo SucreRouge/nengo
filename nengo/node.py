@@ -1,4 +1,5 @@
 import warnings
+import inspect
 
 import numpy as np
 
@@ -53,6 +54,26 @@ class OutputParam(Parameter):
             if node.size_out is None:
                 result = self.coerce_callable(node, output)
                 node.size_out = 0 if result is None else result.size
+            elif node.size_out is not None and node.size_in == 0:
+                try:
+                    func_params = tuple(
+                        inspect.signature(output).parameters.values())
+                except ValueError:
+                    pass
+                else:
+                    if len(func_params) > 1:
+                        if func_params[1].default == inspect.Parameter.empty:
+                            raise ValidationError("output function '%s'"
+                                                  "expects input, "
+                                                "but 'Node.size_in' is 0."
+                                                % output,
+                                                attr=self.name, obj=node)
+                        else:
+                            warnings.warn("'Node.size_in' is 0, but the "
+                                        "output function '%s' is expecting "
+                                        "multiple parameters. Did you mean "
+                                        "for this node to accept input?"
+                                        % output)
         elif is_array_like(output):
             # Make into correctly shaped numpy array before validation
             output = npext.array(
