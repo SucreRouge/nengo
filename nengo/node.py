@@ -1,5 +1,4 @@
 import warnings
-import inspect
 
 import numpy as np
 
@@ -8,7 +7,7 @@ from nengo.base import NengoObject, ObjView
 from nengo.exceptions import ValidationError
 from nengo.params import Default, IntParam, Parameter
 from nengo.processes import Process
-from nengo.utils.compat import is_array_like
+from nengo.utils.compat import is_array_like, getfullargspec
 from nengo.utils.stdlib import checked_call
 
 
@@ -49,31 +48,7 @@ class OutputParam(Parameter):
             if node.size_out is None:
                 node.size_out = output.default_size_out
         elif callable(output):
-            # We trust user's size_out if set, because calling output
-            # may have unintended consequences (e.g., network communication)
-            if node.size_out is None:
-                result = self.coerce_callable(node, output)
-                node.size_out = 0 if result is None else result.size
-            elif node.size_out is not None and node.size_in == 0:
-                try:
-                    func_params = tuple(
-                        inspect.signature(output).parameters.values())
-                except ValueError:
-                    pass
-                else:
-                    if len(func_params) > 1:
-                        if func_params[1].default == inspect.Parameter.empty:
-                            raise ValidationError("output function '%s'"
-                                                  "expects input, "
-                                                "but 'Node.size_in' is 0."
-                                                % output,
-                                                attr=self.name, obj=node)
-                        else:
-                            warnings.warn("'Node.size_in' is 0, but the "
-                                        "output function '%s' is expecting "
-                                        "multiple parameters. Did you mean "
-                                        "for this node to accept input?"
-                                        % output)
+            self.coerce_callable(node, output)
         elif is_array_like(output):
             # Make into correctly shaped numpy array before validation
             output = npext.array(
@@ -91,23 +66,46 @@ class OutputParam(Parameter):
         return output
 
     def coerce_callable(self, node, output):
-        t, x = 0.0, np.zeros(node.size_in)
-        args = (t, x) if node.size_in > 0 else (t,)
-        result, invoked = checked_call(output, *args)
-        if not invoked:
-            msg = ("output function '%s' is expected to accept exactly "
-                   "%d argument" % (output, len(args)))
-            msg += (' (time, as a float)' if len(args) == 1 else
-                    's (time, as a float and data, as a NumPy array)')
-            raise ValidationError(msg, attr=self.name, obj=node)
+        # We trust user's size_out if set, because calling output
+        # may have unintended consequences (e.g., network communication)
+        if node.size_out is None:
+            t, x = 0.0, np.zeros(node.size_in)
+            args = (t, x) if node.size_in > 0 else (t,)
+            result, invoked = checked_call(output, *args)
+            if not invoked:
+                msg = ("output function '%s' is expected to accept exactly "
+                       "%d argument" % (output, len(args)))
+                msg += (' (time, as a float)' if len(args) == 1 else
+                        's (time, as a float and data, as a NumPy array)')
+                raise ValidationError(msg, attr=self.name, obj=node)
 
-        if result is not None:
-            result = np.asarray(result)
-            if len(result.shape) > 1:
-                raise ValidationError("Node output must be a vector (got shape"
-                                      " %s)" % (result.shape,),
-                                      attr=self.name, obj=node)
-        return result
+            if result is not None:
+                result = np.asarray(result)
+                if len(result.shape) > 1:
+                    raise ValidationError("Node output must be a vector (got shape"
+                                          " %s)" % (result.shape,),
+                                          attr=self.name, obj=node)
+            node.size_out = 0 if result is None else result.size
+
+        elif node.size_out is not None and node.size_in == 0:
+            try:
+                func_argspec = getfullargspec(output)
+            except ValueError:
+                pass
+            else:
+                if len(func_argspec.args) > 1:
+                    if len(func_argspec.args) - len(func_argspec.defaults) > 1:
+                        raise ValidationError("output function '%s'"
+                                              "expects input, "
+                                              "but 'Node.size_in' is 0."
+                                              % output,
+                                              attr=self.name, obj=node)
+                    else:
+                        warnings.warn("'Node.size_in' is 0, but the "
+                                      "output function '%s' is expecting "
+                                      "multiple parameters. Did you mean "
+                                      "for this node to accept input?"
+                                      % output)
 
 
 class Node(NengoObject):

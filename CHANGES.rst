@@ -22,6 +22,13 @@ Release History
 2.8.1 (unreleased)
 ==================
 
+**Added**
+
+- Added an error and a warning when setting node output function
+  expecting an input, but ``Node.size_out`` is 0.
+  (`#1452 <https://github.com/nengo/nengo/issues/1452>`_,
+  `#1434 <https://github.com/nengo/nengo/pull/1434>`_)
+
 **Changed**
 
 - Replaced the ``dt`` argument to ``Simulator.trange`` with ``sample_every``
