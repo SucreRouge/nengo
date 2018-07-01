@@ -82,8 +82,8 @@ class OutputParam(Parameter):
             if result is not None:
                 result = np.asarray(result)
                 if len(result.shape) > 1:
-                    raise ValidationError("Node output must be a vector (got shape"
-                                          " %s)" % (result.shape,),
+                    raise ValidationError("Node output must be a vector "
+                                          "(got shape %s)" % (result.shape,),
                                           attr=self.name, obj=node)
             node.size_out = 0 if result is None else result.size
 
