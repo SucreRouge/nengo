@@ -314,6 +314,8 @@ def test_set_callable_output(Simulator):
         nengo.Node(test_obj.step, size_out=1)
 
     with model:
+        with pytest.raises(ValidationError):
+            nengo.Node(lambda: 2.0, size_out=1)
         # if size_in is 0, should only take in t
         with pytest.raises(ValidationError):
             nengo.Node(lambda t, x: 2.0, size_in=0)
@@ -327,6 +329,9 @@ def test_set_callable_output(Simulator):
         # function must return a scalar or vector, not matrix
         with pytest.raises(ValidationError):
             nengo.Node(lambda t: np.ones((2, 2)))
+        # variable length argument lists should be allowed (used in Nengo SPA)
+        nengo.Node(lambda *args: [2.0], size_in=0, size_out=1)
+        nengo.Node(lambda *args: [2.0], size_in=1, size_out=1)
 
     with Simulator(model):  # Ensure it all builds
         pass
