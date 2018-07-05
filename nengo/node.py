@@ -67,12 +67,11 @@ class OutputParam(Parameter):
         return output
 
     def coerce_callable(self, node, output):
+        self.check_callable_args_list(node, output)
         # We trust user's size_out if set, because calling output
         # may have unintended consequences (e.g., network communication)
         if node.size_out is None:
             self.check_callable_output(node, output)
-        elif node.size_in == 0:
-            self.check_callable_size_out(node, output)
 
     def check_callable_output(self, node, output):
         t, x = 0.0, np.zeros(node.size_in)
@@ -92,7 +91,7 @@ class OutputParam(Parameter):
                                       attr=self.name, obj=node)
         node.size_out = 0 if result is None else result.size
 
-    def check_callable_size_out(self, node, output):
+    def check_callable_args_list(self, node, output):
         # not all callables provide an argspec, such as numpy
         try:
             func_argspec = getfullargspec(output)
