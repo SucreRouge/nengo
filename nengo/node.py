@@ -95,7 +95,7 @@ class OutputParam(Parameter):
         # not all callables provide an argspec, such as numpy
         try:
             func_argspec = getfullargspec(output)
-        except ValueError:
+        except (TypeError, ValueError):
             pass
         else:
             args_len = len(func_argspec.args)
