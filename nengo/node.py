@@ -71,8 +71,7 @@ class OutputParam(Parameter):
         # may have unintended consequences (e.g., network communication)
         if node.size_out is None:
             self.check_callable_output(node, output)
-
-        elif node.size_out is not None and node.size_in == 0:
+        elif node.size_in == 0:
             self.check_callable_size_out(node, output)
 
     def check_callable_output(self, node, output):
