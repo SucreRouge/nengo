@@ -12,6 +12,17 @@ from nengo.utils.compat import is_array_like, getfullargspec
 from nengo.utils.stdlib import checked_call
 
 
+class OutputFnArgsValidationError(ValidationError):
+    def __init__(self, output, attr, node):
+        n_args = 2 if node.size_in > 0 else 1
+        msg = ("output function '%s' is expected to accept exactly "
+               "%d argument" % (output, n_args))
+        msg += (' (time, as a float)' if n_args == 1 else
+                's (time, as a float and data, as a NumPy array)')
+        super(OutputFnArgsValidationError, self).__init__(
+            msg, attr=attr, obj=node)
+
+
 class OutputParam(Parameter):
     def __init__(self, name, default, optional=True, readonly=False):
         assert optional  # None has meaning (passthrough node)
@@ -78,11 +89,7 @@ class OutputParam(Parameter):
         args = (t, x) if node.size_in > 0 else (t,)
         result, invoked = checked_call(output, *args)
         if not invoked:
-            msg = ("output function '%s' is expected to accept exactly "
-                   "%d argument" % (output, len(args)))
-            msg += (' (time, as a float)' if len(args) == 1 else
-                    's (time, as a float and data, as a NumPy array)')
-            raise ValidationError(msg, attr=self.name, obj=node)
+            raise OutputFnArgsValidationError(output, self.name, node)
         if result is not None:
             result = np.asarray(result)
             if len(result.shape) > 1:
@@ -109,11 +116,7 @@ class OutputParam(Parameter):
                     defaults_len = len(func_argspec.defaults)
 
                 if args_len - defaults_len > 1:
-                    raise ValidationError("output function '%s'"
-                                          "expects input, "
-                                          "but 'Node.size_in' is 0."
-                                          % output,
-                                          attr=self.name, obj=node)
+                    raise OutputFnArgsValidationError(output, self.name, node)
                 else:
                     warnings.warn("'Node.size_in' is 0, but the "
                                   "output function '%s' is expecting "
