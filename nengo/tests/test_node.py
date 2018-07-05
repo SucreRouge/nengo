@@ -321,8 +321,6 @@ def test_set_callable_output(Simulator):
             nengo.Node(lambda t, x: 2.0, size_in=0)
         with pytest.raises(ValidationError):
             nengo.Node(lambda t, x: 2.0, size_in=0, size_out=0)
-        with pytest.warns(UserWarning):
-            nengo.Node(lambda t, x=0: 2.0, size_in=0, size_out=0)
         # if size_in > 0, should take both t and x
         with pytest.raises(ValidationError):
             nengo.Node(lambda t: t ** 2, size_in=1)

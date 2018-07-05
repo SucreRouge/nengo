@@ -122,11 +122,6 @@ class OutputParam(Parameter):
 
             if not required_len <= expected_len <= args_len:
                 raise OutputFnArgsValidationError(output, self.name, node)
-            elif args_len != expected_len:
-                warnings.warn(
-                  "output function '%s' has a different number of "
-                  "arguments (%i) than expected (%i)." % (
-                      output, args_len, expected_len))
 
 
 class Node(NengoObject):
