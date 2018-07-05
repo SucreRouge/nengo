@@ -106,23 +106,27 @@ class OutputParam(Parameter):
             pass
         else:
             args_len = len(func_argspec.args)
-            if inspect.ismethod(output):
+            if inspect.ismethod(output) or not inspect.isroutine(output):
                 # don't count self as an argument
                 args_len -= 1
 
-            if args_len > 1:
-                defaults_len = 0
-                if func_argspec.defaults is not None:
-                    defaults_len = len(func_argspec.defaults)
+            defaults_len = 0
+            if func_argspec.defaults is not None:
+                defaults_len = len(func_argspec.defaults)
 
-                if args_len - defaults_len > 1:
-                    raise OutputFnArgsValidationError(output, self.name, node)
-                else:
-                    warnings.warn("'Node.size_in' is 0, but the "
-                                  "output function '%s' is expecting "
-                                  "multiple parameters. Did you mean "
-                                  "for this node to accept input?"
-                                  % output)
+            required_len = args_len - defaults_len
+            expected_len = 2 if node.size_in > 0 else 1
+
+            if func_argspec.varargs:
+                args_len = max(expected_len, args_len)
+
+            if not required_len <= expected_len <= args_len:
+                raise OutputFnArgsValidationError(output, self.name, node)
+            elif args_len != expected_len:
+                warnings.warn(
+                  "output function '%s' has a different number of "
+                  "arguments (%i) than expected (%i)." % (
+                      output, args_len, expected_len))
 
 
 class Node(NengoObject):
