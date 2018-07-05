@@ -105,9 +105,8 @@ class OutputParam(Parameter):
                 args_len -= 1
 
             if args_len > 1:
-                if func_argspec.defaults is None:
-                    defaults_len = 0
-                else:
+                defaults_len = 0
+                if func_argspec.defaults is not None:
                     defaults_len = len(func_argspec.defaults)
 
                 if args_len - defaults_len > 1:
