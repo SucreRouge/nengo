@@ -214,6 +214,32 @@ def test_signal_reshape():
     assert three_d.reshape((2, -1, 2)).shape == (2, 2, 2)
     assert three_d.reshape((1, 2, 1, 2, 2, 1)).shape == (1, 2, 1, 2, 2, 1)
 
+    value = np.arange(24).astype(np.float64).reshape(3, 2, 4)
+    s = Signal(np.array(value), name='s')
+
+    s0slice = (slice(None, 2), 1, slice(1, None, 2))
+    s0 = s[s0slice]
+    print(s0.base)
+    assert np.array_equal(s0.initial_value, value[s0slice])
+
+    s1slice = (slice(None), 0, slice(None, None, 2))
+    s1 = s[s1slice]
+    assert np.array_equal(s1.initial_value, value[s1slice])
+
+    s2 = s1.reshape(2, 3)
+    assert np.array_equal(s2.initial_value, value[s1slice].reshape(2, 3))
+
+    values = SignalDict()
+    values.init(s)
+    values.init(s0)
+    values.init(s1)
+    values.init(s2)
+
+    values[s] += 1
+    assert np.array_equal(values[s0], value[s0slice] + 1)
+    assert np.array_equal(values[s1], value[s1slice] + 1)
+    assert np.array_equal(values[s2], value[s1slice].reshape(2, 3) + 1)
+
 
 def test_signal_slicing(rng):
     slices = [0, 1, slice(None, -1), slice(1, None), slice(1, -1),
